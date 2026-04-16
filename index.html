@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SMS Dashboard</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body { font-family: Arial; }
+</style>
+</head>
+
+<body class="bg-gray-100">
+
+<div class="max-w-xl mx-auto mt-20 bg-white p-6 rounded-xl shadow">
+
+<h2 class="text-xl font-bold mb-4">Send SMS</h2>
+
+<!-- Phone -->
+<input id="phone" class="w-full border p-2 mb-3" placeholder="Enter phone number" />
+
+<!-- Template -->
+<select id="template" class="w-full border p-2 mb-3">
+<option value="">Select Template</option>
+<option value="Service Reminder">Service Reminder</option>
+<option value="Offer Message">Offer Message</option>
+<option value="Follow-up">Follow-up</option>
+</select>
+
+<!-- Message -->
+<textarea id="message" class="w-full border p-2 mb-3" rows="4" placeholder="Enter message"></textarea>
+
+<!-- Button -->
+<button id="sendBtn" class="w-full bg-black text-white p-3 rounded">
+Send SMS
+</button>
+
+</div>
+
+<script>
+// Templates
+const templates = {
+    "Service Reminder": "Hello, your service is scheduled for tomorrow.",
+    "Offer Message": "Get 20% off on your next service!",
+    "Follow-up": "We hope you liked our service. Let us know your feedback."
+};
+
+// Autofill message
+document.getElementById("template").addEventListener("change", function() {
+    const val = this.value;
+    if (templates[val]) {
+        document.getElementById("message").value = templates[val];
+    }
+});
+
+// Send SMS
+document.getElementById("sendBtn").addEventListener("click", async () => {
+    const phone = document.getElementById("phone").value;
+    const message = document.getElementById("message").value;
+
+    if (!phone || !message) {
+        alert("Enter phone and message");
+        return;
+    }
+
+    try {
+        const res = await fetch("http://localhost:3000/send-sms", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ number: phone, message })
+        });
+
+        const data = await res.json();
+        alert(data.message);
+    } catch (err) {
+        alert("Error sending SMS");
+    }
+});
+</script>
+
+</body>
+</html>
