@@ -7,23 +7,42 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-
-// Serve frontend
 app.use(express.static(__dirname));
 
-// Debug check (important for Render)
+// Debug API key
 if (!process.env.API_KEY) {
     console.log("❌ API KEY NOT FOUND - Add it in Render Environment Variables");
 }
 
-// Send SMS API
+// 🔥 TEMPLATE ENGINE FUNCTION
+function buildMessage(template, data) {
+    let finalMessage = template;
+
+    Object.keys(data).forEach((key) => {
+        const regex = new RegExp(`{{${key}}}`, "g");
+        finalMessage = finalMessage.replace(regex, data[key] || "");
+    });
+
+    return finalMessage;
+}
+
+// 📩 SEND SMS API
 app.post("/send-sms", async (req, res) => {
     try {
-        const { number, message } = req.body;
+        const {
+            number,
+            template,
+            name,
+            brand,
+            complaint,
+            date,
+            time,
+            location
+        } = req.body;
 
-        if (!number || !message) {
+        if (!number || !template) {
             return res.status(400).json({
-                message: "❌ Missing number or message"
+                message: "❌ Missing number or template"
             });
         }
 
@@ -33,6 +52,17 @@ app.post("/send-sms", async (req, res) => {
             });
         }
 
+        // 🔥 Build final SMS message from template
+        const message = buildMessage(template, {
+            name,
+            brand,
+            complaint,
+            date,
+            time,
+            location
+        });
+
+        // Send SMS via Fast2SMS
         const response = await axios.post(
             "https://www.fast2sms.com/dev/bulkV2",
             {
@@ -50,10 +80,11 @@ app.post("/send-sms", async (req, res) => {
             }
         );
 
-        console.log("SMS API RESPONSE:", response.data);
+        console.log("SMS SENT:", response.data);
 
         res.json({
-            message: "✅ SMS Sent Successfully"
+            message: "✅ SMS Sent Successfully",
+            sentMessage: message
         });
 
     } catch (error) {
@@ -65,12 +96,12 @@ app.post("/send-sms", async (req, res) => {
     }
 });
 
-// Health check route (VERY IMPORTANT for Render)
+// Health check
 app.get("/", (req, res) => {
     res.send("✅ SMS Server is running");
 });
 
-// Dynamic port
+// Port
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
